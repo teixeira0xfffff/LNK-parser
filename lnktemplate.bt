@@ -1,0 +1,496 @@
+//---------------------------------------------------------------------------
+// updated 2019/06 by teixeira0xfffff
+// Windows LNK Structures
+// https://msdn.microsoft.com/en-us/library/windows/desktop/ms633548%28v=vs.85%29.aspx
+// https://winprotocoldoc.blob.core.windows.net/productionwindowsarchives/MS-SHLLINK/%5bMS-SHLLINK%5d.pdf
+// LNK spec says that only SW_SHOWNORMAL, SW_SHOWMAXIMIZED and SW_SHOWMINNOACTIVE are accepted
+//---------------------------------------------------------------------------
+
+enum <DWORD> SHOWCOMMAND
+{ 
+    SW_HIDE = 0,
+    SW_SHOWNORMAL,
+    SW_SHOWMINIMIZED,
+    SW_SHOWMAXIMIZED,
+    SW_SHOWNOACTIVATE,
+    SW_SHOW,
+    SW_MINIMIZE,
+    SW_SHOWMINNOACTIVE,
+    SW_SHOWNA,
+    SW_RESTORE,
+    SW_SHOWDEFAULT,
+    SW_FORCEMINIMIZE
+};
+
+// https://msdn.microsoft.com/en-us/library/windows/desktop/aa364939%28v=vs.85%29.aspx
+enum <DWORD> DRIVETYPE
+{
+    DRIVE_UNKNOWN = 0,
+    DRIVE_NO_ROOT_DIR,
+    DRIVE_REMOVABLE,
+    DRIVE_FIXED,
+    DRIVE_REMOTE,
+    DRIVE_CDROM
+};
+
+// https://msdn.microsoft.com/en-us/library/windows/desktop/gg258117%28v=vs.85%29.aspx
+typedef struct
+{
+	int FILE_ATTRIBUTE_READONLY : 1;
+	int FILE_ATTRIBUTE_HIDDEN : 1;
+	int FILE_ATTRIBUTE_SYSTEM : 1;
+	int Reserved1 : 1;
+	int FILE_ATTRIBUTE_DIRECTORY : 1;
+	int FILE_ATTRIBUTE_ARCHIVE : 1;
+	int FILE_ATTRIBUTE_NORMAL : 1;
+	int FILE_ATTRIBUTE_TEMPORARY : 1;
+	int FILE_ATTRIBUTE_SPARSE_FILE : 1;
+	int FILE_ATTRIBUTE_REPARSE_POINT : 1;
+	int FILE_ATTRIBUTE_COMPRESSED : 1;
+	int FILE_ATTRIBUTE_OFFLINE : 1;
+	int FILE_ATTRIBUTE_NOT_CONTENT_INDEXED : 1;
+	int FILE_ATTRIBUTE_ENCRYPTED : 1;
+    int FILE_ATTRIBUTE_INTEGRITY_STREAM : 1;
+    int FILE_ATTRIBUTE_VIRTUAL : 1;
+    int FILE_ATTRIBUTE_NO_SCRUB_DATA : 1;
+	int Unused1 : 15;
+} FileAttributes;
+
+typedef struct
+{
+    BYTE b[16];
+} GUID <read=ReadableGUID>;
+
+// GUIDs found in shlguid.h
+string ReadableGUID(GUID &guid)
+{
+	string sGUID;
+	SPrintf(sGUID, "{%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X}", guid.b[3], guid.b[2], guid.b[1], guid.b[0], guid.b[5], guid.b[4], guid.b[7], guid.b[6], guid.b[8], guid.b[9], guid.b[10], guid.b[11], guid.b[12], guid.b[13], guid.b[14], guid.b[15]);
+    switch (sGUID)
+    {
+        case "{208D2C60-3AEA-1069-A2D7-08002B30309D}" : return "CLSID_NetworkPlaces";
+        case "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" : return "CLSID_MyComputer";
+        case "{21EC2020-3AEA-1069-A2DD-08002B30309D}" : return "CLSID_ControlPanel";
+        case "{450D8FBA-AD25-11D0-98A8-0800361B1103}" : return "CLSID_MyDocuments";
+        case "{46E06680-4BF0-11D1-83EE-00A0C90DC849}" : return "CLSID_NetworkDomain";
+        case "{54A754C0-4BF1-11D1-83EE-00A0C90DC849}" : return "CLSID_NetworkShare";
+        case "{645FF040-5081-101B-9F08-00AA002F954E}" : return "CLSID_RecycleBin";
+        case "{871C5380-42A0-1069-A2EA-08002B30309D}" : return "CLSID_Internet";
+        case "{C0542A90-4BF0-11D1-83EE-00A0C90DC849}" : return "CLSID_NetworkServer";
+        case "{F3364BA0-65B9-11CE-A9BA-00AA004AE837}" : return "CLSID_ShellFSFolder";
+        default:    return sGUID;
+    }
+}
+
+//---------------------------------------------------------------------------
+//
+// Structures in LNK file
+//
+
+typedef struct
+{
+	int HasLinkTargetIDList : 1;
+	int HasLinkInfo : 1;
+	int HasName : 1;
+	int HasRelativePath : 1;
+	int HasWorkingDir : 1;
+	int HasArguments : 1;
+	int HasIconLocation : 1;
+	int IsUnicode : 1;
+	int ForceNoLinkInfo : 1;
+	int HasExpString : 1;
+	int RunInSeparateProcess : 1;
+	int Unused1 : 1;
+	int HasDarwinID : 1;
+	int RunAsUser : 1;
+	int HasExpIcon : 1;
+	int NoPidlAlias : 1;
+	int Unused2 : 1;
+	int RunWithShimLayer : 1;
+	int ForceNoLinkTrack : 1;
+	int EnableTargetMetadata : 1;
+	int DisableLinkPathTracking : 1;
+	int DisableKnownFolderTracking : 1;
+	int DisableKnownFolderAlias : 1;
+	int AllowLinkToLink : 1;
+	int UnaliasOnSave : 1;
+	int PreferEnvironmentPath : 1;
+	int KeepLocalIDListForUNCTarget : 1;
+	int Unused3 : 5;
+} LinkFlags;
+
+typedef struct
+{
+	DWORD HeaderSize;					/* Must be 0x0000004C */
+	GUID LinkCLSID;						/* This value MUST be 00021401-0000-0000-C000-000000000046. */
+	LinkFlags sLinkFlags;
+	FileAttributes sFileAttributes;
+	FILETIME CreationTime;
+	FILETIME AccessTime;
+	FILETIME WriteTime;
+ 	DWORD FileSize;
+	DWORD IconIndex;
+	SHOWCOMMAND ShowCommand;
+	WORD HotKey;
+	WORD Reserved1;
+	DWORD Reserved2;
+	DWORD Reserved3;
+} ShellLinkHeader <size=GetShellLinkHeaderSize>;
+
+DWORD GetShellLinkHeaderSize(ShellLinkHeader &ptr)
+{
+    local DWORD headerSize = ReadUInt(startof(ptr));
+    if (headerSize != 0x4C) 
+    {
+        Warning("Unexpected ShellLinkHeader.HeaderSize: 0x%X, should be 0x4C", headerSize);
+    }
+    return headerSize;
+}
+
+// http://msdn.microsoft.com/en-us/library/cc144089%28VS.85%29.aspx#unknown_74413
+typedef struct
+{
+	WORD ItemIDSize;
+    if (ItemIDSize != 0x0)
+    {
+        // guess that it is guid
+	    if (ItemIDSize == 0x14)
+	    {
+		    BYTE Type;
+		    BYTE Unknown;
+            GUID Guid;
+	    }
+	    else
+        {
+		    BYTE Data[ItemIDSize - 2];
+        }
+    }
+} ItemID;
+
+typedef struct
+{
+    WORD IDListSize;
+    do
+    {
+        ToggleBackColor();
+        ItemID itemId;
+    } while (itemId.ItemIDSize != 0);
+} LinkTargetIDList <size=GetLinkTargetIDListSize>;
+
+DWORD GetLinkTargetIDListSize(LinkTargetIDList &ptr)
+{
+    return ReadUShort(startof(ptr)) + 2;
+}
+
+typedef struct
+{
+	int VolumeIDAndLocalBasePath : 1;
+	int CommonNetworkRelativeLinkAndPathSuffix : 1;
+	int Unused1 : 30;
+} LinkInfoFlags;
+
+typedef struct
+{
+	int ValidDevice : 1;
+	int ValidNetType : 1;
+	int Unused1 : 30;
+} CommonNetworkRelativeLinkFlags;
+
+typedef struct
+{
+	DWORD VolumeIDSize;
+	DRIVETYPE DriveType;
+	DWORD DriveSerialNumber;
+	DWORD VolumeLabelOffset;
+	if (VolumeLabelOffset == 0x00000014)
+	{
+		DWORD VolumeLabelOffsetUnicode;
+	}
+
+    // rest of fields are accessed via offsets.
+    if (VolumeLabelOffset != 0x00000014)
+    {
+        FSeek( startof(this) + VolumeLabelOffset );
+        string Data;
+    }
+    else
+    {
+        FSeek( startof(this) + VolumeLabelOffsetUnicode );
+        wstring Data;
+    }
+	
+} VolumeID <size=GetVolumeIDSize>;
+
+DWORD GetVolumeIDSize(VolumeID &ptr)
+{
+    return ReadUInt(startof(ptr));
+}
+
+typedef struct
+{
+	DWORD CommonNetworkRelativeLinkSize;
+	CommonNetworkRelativeLinkFlags sCommonNetworkRelativeLinkFlags;
+	DWORD NetNameOffset;
+	DWORD DeviceNameOffset;
+	DWORD NetworkProviderType;
+	if (NetNameOffset > 0x14)
+	{
+		DWORD NetNameOffsetUnicode;
+		DWORD DeviceNameOffsetUnicode;
+	}
+
+    // rest of fields are accessed via offsets.
+    if (NetNameOffset != 0)
+    {
+        FSeek( startof(this) + NetNameOffset );
+	    string NetName;
+    }
+    if ((sCommonNetworkRelativeLinkFlags.ValidDevice == 1) && (DeviceNameOffset != 0))
+    {
+        FSeek( startof(this) + DeviceNameOffset );
+	    string DeviceName;
+    }
+	if (NetNameOffset > 0x14)
+	{
+        if (NetNameOffsetUnicode != 0)
+        {
+            FSeek( startof(this) + NetNameOffsetUnicode );
+		    wstring NetNameUnicode;
+        }
+        if (DeviceNameOffsetUnicode != 0)
+        {
+            FSeek( startof(this) + DeviceNameOffsetUnicode );
+		    wstring DeviceNameUnicode;
+        }
+	}
+} CommonNetworkRelativeLink <size=GetCommonNetworkRelativeLinkSize>;
+
+DWORD GetCommonNetworkRelativeLinkSize(CommonNetworkRelativeLink &ptr)
+{
+    return ReadUInt(startof(ptr));
+}
+
+typedef struct
+{
+	DWORD LinkInfoSize;
+	DWORD LinkInfoHeaderSize;
+	LinkInfoFlags sLinkInfoFlags;
+	DWORD VolumeIDOffset;
+	DWORD LocalBasePathOffset;
+	DWORD CommonNetworkRelativeLinkOffset;
+	DWORD CommonPathSuffixOffset;
+	if (LinkInfoHeaderSize >= 0x00000024 )
+	{
+		DWORD LocalBasePathOffsetUnicode;
+		DWORD CommonPathSuffixOffsetUnicode;
+	}
+
+    // rest of fields are accessed via offsets.
+	if ((sLinkInfoFlags.VolumeIDAndLocalBasePath == 1) && (VolumeIDOffset != 0))
+	{
+        FSeek( startof(this) + VolumeIDOffset );
+		VolumeID sVolumeID;
+    }
+	if ((sLinkInfoFlags.VolumeIDAndLocalBasePath == 1) && (LocalBasePathOffset != 0))
+	{
+        FSeek( startof(this) + LocalBasePathOffset );
+		string LocalBasePath;
+    }
+	if ((sLinkInfoFlags.CommonNetworkRelativeLinkAndPathSuffix == 1) && (CommonNetworkRelativeLinkOffset != 0))
+	{
+        FSeek( startof(this) + CommonNetworkRelativeLinkOffset );
+		CommonNetworkRelativeLink sCommonNetworkRelativeLink;
+	}
+	if (CommonPathSuffixOffset != 0)
+	{
+        FSeek( startof(this) + CommonPathSuffixOffset );
+		string CommonPathSuffix;
+	}
+    if ((sLinkInfoFlags.VolumeIDAndLocalBasePath == 1) && (exists(LocalBasePathOffsetUnicode)) && (LocalBasePathOffsetUnicode != 0 ))
+    {
+        FSeek( startof(this) + LocalBasePathOffsetUnicode );
+        wstring LocalBasePathUnicode;
+    }
+    if ((exists(CommonPathSuffixOffsetUnicode)) && (CommonPathSuffixOffsetUnicode != 0 ))
+    {
+        FSeek( startof(this) + CommonPathSuffixOffsetUnicode );
+        wstring CommonPathSuffixUnicode;
+    }
+} LinkInfo <size=GetLinkInfoSize>;
+
+DWORD GetLinkInfoSize(LinkInfo &ptr)
+{
+    return ReadUInt(startof(ptr));
+}
+
+typedef struct
+{
+	WORD CountCharacters;
+	wchar_t String[CountCharacters];
+} StringData <read=ReadableStringData>;
+
+typedef struct
+{
+    DWORD BlockSize;
+    DWORD BlockSignature;
+	DWORD Length;
+	DWORD Version;
+	char MachineID[16];     //spec says it's variable-length. In my tests the NETBIOS name was always 0x10 chars long.
+	BYTE Droid[32];
+	BYTE DroidBirth[32];
+} TrackerDataBlock <size=GetTrackerDataBlockSize, read=ReadableTrackerDataBlock>;
+
+DWORD GetTrackerDataBlockSize(TrackerDataBlock &ptr)
+{
+    return ReadUInt(startof(ptr));
+}
+
+typedef struct
+{
+    DWORD BlockSize;
+    if ( BlockSize >= 4)
+    {
+        DWORD BlockSignature;
+        BYTE BlockData[BlockSize - 8];
+    }
+} ExtraData <read=ReadableExtraData>;
+
+
+//---------------------------------------------------------------------------
+//
+// Functions that make data human-readable
+//
+
+wstring ReadableStringData( StringData &sd)
+{
+    return sd.String;
+}
+
+string ReadableTrackerDataBlock(TrackerDataBlock &tdb)
+{
+    string buffer;
+    SPrintf(buffer, "Machine: %s", tdb.MachineID);
+    return buffer;
+}
+
+string ReadableExtraData( ExtraData &sExtraData)
+{
+    if (sExtraData.BlockSize >= 4)
+    {
+        switch ( sExtraData.BlockSignature)
+	    {
+            case 0xA0000001 : return "EnvironmentVariableDataBlock";
+            case 0xA0000002 : return "ConsoleDataBlock";
+            case 0xA0000003 : return "TrackerDataBlock";
+            case 0xA0000004 : return "ConsoleFEDataBlock";
+            case 0xA0000005 : return "SpecialFolderDataBlock";
+            case 0xA0000006 : return "DarwinDataBlock";
+            case 0xA0000007 : return "IconEnvironmentDataBlock";
+            case 0xA0000008 : return "ShimDataBlock";
+            case 0xA0000009 : return "PropertyStoreDataBlock";
+            case 0xA000000B : return "KnownFolderDataBlock";
+            case 0xA000000C : return "VistaAndAboveIDListDataBlock";
+            default :
+                string s;
+                SPrintf(s, "%x", sExtraData.BlockSignature);
+                return s;
+        }
+    }
+    return "Terminating block";
+}
+
+
+//---------------------------------------------------------------------------
+//
+// Colorize structures
+//
+
+local int iCOLOR = 0x95E8FF;
+local int iCOLOR2 = 0xFED7DB;
+local int iToggleColor = iCOLOR;
+
+void ToggleBackColor()
+{
+	if (iToggleColor == iCOLOR)
+		iToggleColor = iCOLOR2;
+	else
+		iToggleColor = iCOLOR;
+	SetBackColor(iToggleColor);
+}
+
+
+//---------------------------------------------------------------------------
+//
+// Template start
+//
+
+LittleEndian();
+ToggleBackColor();
+
+ShellLinkHeader sShellLinkHeader;
+
+if (sShellLinkHeader.sLinkFlags.HasLinkTargetIDList == 1)
+{
+	ToggleBackColor();
+    LinkTargetIDList sLinkTargetIDList;
+}
+
+if (sShellLinkHeader.sLinkFlags.HasLinkInfo == 1)
+{
+	ToggleBackColor();
+	LinkInfo sLinkInfo;
+}
+
+if (sShellLinkHeader.sLinkFlags.HasName == 1)
+{
+	ToggleBackColor();
+	StringData NAME_STRING;
+}
+
+if (sShellLinkHeader.sLinkFlags.HasRelativePath == 1)
+{
+	ToggleBackColor();
+	StringData RELATIVE_PATH;
+}
+
+if (sShellLinkHeader.sLinkFlags.HasWorkingDir == 1)
+{
+	ToggleBackColor();
+	StringData WORKING_DIR;
+}
+
+if (sShellLinkHeader.sLinkFlags.HasArguments == 1)
+{
+	ToggleBackColor();
+	StringData COMMAND_LINE_ARGUMENTS;
+}
+
+if (sShellLinkHeader.sLinkFlags.HasIconLocation == 1)
+{
+	ToggleBackColor();
+	StringData ICON_LOCATION;
+}
+
+// read ExtraDataBlock[]
+local DWORD _BlockSize;
+local DWORD _BlockSignature;
+do
+{
+    ToggleBackColor();
+    _BlockSize = ReadUInt(FTell());
+    _BlockSignature = 0;
+    if (_BlockSize >= 4)
+    {
+        _BlockSignature = ReadUInt(FTell()+4);
+    }
+    switch ( _BlockSignature)
+	{
+		case 0xA0000003:
+			TrackerDataBlock sTrackerDataBlock;
+			break;
+    	default:
+	    	ExtraData sExtraDataBlock;
+	}
+} while (_BlockSize >= 4);
+
+SetBackColor(cNone);
